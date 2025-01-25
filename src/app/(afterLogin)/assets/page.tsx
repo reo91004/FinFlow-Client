@@ -11,6 +11,8 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { useModalStore } from '@/app/store/modal';
+import { useRouter } from 'next/navigation';
 
 // 실제 환경에서는 API에서 가져와야 하는 환율 데이터
 const exchangeRates = {
@@ -47,6 +49,9 @@ export default function Page() {
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const { selectedCurrency, currencies, setCurrency } = useCurrencyStore();
   const [displayCurrency, setDisplayCurrency] = useState<"original" | "converted">("converted");
+  const { isModalOpen, setIsModalOpen } = useModalStore();
+
+  const router = useRouter();
 
   // 샘플 포트폴리오 데이터 (구매 통화 정보 포함)
   const tableData = [
@@ -230,11 +235,16 @@ export default function Page() {
     );
   }
 
+  const onClickAddInvestments = () => {
+    setIsModalOpen(true);
+    router.push('/transactions');
+  }
+
   return (
     <div>
       <div className="flex justify-end items-center mb-4">
         {/* 투자 추가 버튼 */}
-        <button className="bg-white hover:bg-slate-100 text-slate-700 flex justify-center items-center gap-2 px-3.5 py-2 text-sm rounded-[0.5rem] transition-all shadow-xl">
+        <button className="bg-white hover:bg-slate-100 text-slate-700 flex justify-center items-center gap-2 px-3.5 py-2 text-sm rounded-[0.5rem] transition-all shadow-xl" onClick={onClickAddInvestments}>
           <svg width="24" height="24" viewBox="0 0 24 24">
             <circle fill="currentColor" opacity="0.3" cx="12" cy="12" r="10"></circle>
             <path
