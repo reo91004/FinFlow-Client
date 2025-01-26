@@ -3,7 +3,7 @@ import { useModalStore } from "@/app/store/modal";
 import { useState } from "react";
 
 export default function AddInvestmentsModal() {
-    const { isModalOpen, setIsModalOpen } = useModalStore();
+    const { isInvestmentsModalOpen, setIsInvestmentsModalOpen } = useModalStore();
     const { selectedCurrency, currencies, setCurrency } = useCurrencyStore();
 
     const [ticker, setTicker] = useState("");
@@ -51,7 +51,7 @@ export default function AddInvestmentsModal() {
 
     const handleSubmit = () => {
         if (validateForm()) {
-            setIsModalOpen(false);
+            setIsInvestmentsModalOpen(false);
         }
     };
 
@@ -67,7 +67,7 @@ export default function AddInvestmentsModal() {
                             </h2>
                             <button
                                 className="text-3xl text-slate-300 hover:text-[#3699ff] transition-all"
-                                onClick={() => setIsModalOpen(false)}
+                                onClick={() => setIsInvestmentsModalOpen(false)}
                             >
                                 ×
                             </button>
@@ -178,7 +178,7 @@ export default function AddInvestmentsModal() {
                     <div className="flex flex-row justify-end gap-2">
                         <button
                             className="px-3 py-2 bg-slate-100 hover:bg-slate-300 text-sm font-semibold text-slate-700 rounded-md transition-all"
-                            onClick={() => setIsModalOpen(false)}
+                            onClick={() => setIsInvestmentsModalOpen(false)}
                         >
                             취소
                         </button>
