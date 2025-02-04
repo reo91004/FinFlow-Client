@@ -14,6 +14,9 @@ import {
 import { useModalStore } from "@/app/store/modal";
 import { useRouter } from "next/navigation";
 import TransferModal from './_component/TransferModal';
+import { currencySymbols } from '@/utils/currencySymbols';
+import { formatCurrency } from '@/utils/formatCurrency';
+import Collapse from '@mui/material/Collapse'; // Material-UI Collapse 컴포넌트 import
 
 // 실제 환경에서는 API에서 가져와야 하는 환율 데이터
 const exchangeRates = {
@@ -28,21 +31,6 @@ const exchangeRates = {
     CHF: 0.89,
     INR: 83.35,
     SGD: 1.34,
-};
-
-// 통화별 심볼 매핑
-const currencySymbols = {
-    USD: "$",
-    KRW: "₩",
-    EUR: "€",
-    GBP: "£",
-    JPY: "¥",
-    CAD: "C$",
-    AUD: "A$",
-    CNY: "¥",
-    CHF: "CHF",
-    INR: "₹",
-    SGD: "S$",
 };
 
 export default function Page() {
@@ -101,20 +89,6 @@ export default function Page() {
         return baseAmount * exchangeRates[toCurrency];
     };
 
-    // 통화 형식 지정 함수
-    const formatCurrency = (amount: number, currency: string) => {
-        const symbol = currencySymbols[currency] || "";
-        const absAmount = Math.abs(amount);
-        const formattedAmount = new Intl.NumberFormat("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(absAmount);
-
-        return amount < 0
-            ? `-${symbol}${formattedAmount}`
-            : `${symbol}${formattedAmount}`;
-    };
-
     // 'converted' 모드일 때 사용될 전체 합 계산
     const totals = tableData.reduce(
         (acc, item) => {
@@ -149,8 +123,7 @@ export default function Page() {
                 totalPurchase: acc.totalPurchase + convertedPurchase,
                 currentPrice: acc.currentPrice + convertedCurrent,
                 dividend: acc.dividend + convertedDividend,
-                // 총 구매액 대비 배당금의 합을 구하려면 비율이 아니라 실제 금액을 더한 후에 purchase로 나눠야 합니다.
-                dividendYield: 0, // 일단 아래에서 다시 계산
+                dividendYield: 0, // 나중에 계산
                 totalProfit: acc.totalProfit + convertedTotalProfit,
                 dailyProfit: acc.dailyProfit + convertedDailyProfit,
             };
@@ -221,15 +194,13 @@ export default function Page() {
         );
     };
 
-    // 만약 original로 표시하는데 서로 다른 통화들이 있으면 합산이 의미가 없으므로 처리
-    // 예) [{purchaseCurrency: 'USD'}, {purchaseCurrency: 'EUR'}] => 중복 통화
+    // original 통화가 단일일 경우에만 footer 합을 제대로 보여주기 위해
+    // purchaseCurrency가 모두 동일할 때 해당 통화로 합산
     const uniqueCurrencies = Array.from(
         new Set(tableData.map((item) => item.purchaseCurrency))
     );
     const hasMultipleCurrencies = uniqueCurrencies.length > 1;
 
-    // original 통화가 단일일 경우에만 footer 합을 제대로 보여주기 위해
-    // purchaseCurrency가 모두 동일할 때 해당 통화로 합산
     let originalTotals = {
         totalPurchase: 0,
         currentPrice: 0,
@@ -239,11 +210,9 @@ export default function Page() {
     };
 
     if (!hasMultipleCurrencies && uniqueCurrencies.length === 1) {
-        // 모든 항목이 같은 통화로 되어 있을 때만 합산
         const onlyCurrency = uniqueCurrencies[0];
         originalTotals = tableData.reduce(
             (acc, item) => {
-                // 같은 통화니까 그대로 숫자 합산
                 return {
                     totalPurchase: acc.totalPurchase + item.totalPurchase,
                     currentPrice: acc.currentPrice + item.currentPrice,
@@ -285,7 +254,7 @@ export default function Page() {
                             r="10"
                         ></circle>
                         <path
-                            d="M11,11 L11,7 C11,6.44771525 11.4477153,6 12,6 C12.5522847,6 13,6.44771525 13,7 L13,11 L17,11 C17.5522847,11 18,11.4477153 18,12 C18,12.5522847 17.5522847,13 17,13 L13,13 L13,17 C13,17.5522847 12.5522847,18 12,18 C11.4477153,18 11,17.5522847 11,17 L11,13 L7,13 C6.44771525,13 6,12.5522847 6,12 C6,11.4477153 6.44771525,11 7,11 L11,11 Z"
+                            d="M11,11 L11,7 C11,6.44771525 11.4477153,6 12,6 C12.5522847,6 13,6.44771525 13,7 L13,11 L17,11 C17.5522847,11 18,11.4477153 18,12 C18,12.5522847 17.5522847,13 17,13 L13,13 L13,17 C13,17.5522847 12.5522847,18 12,18 C11.4477153,18 11,17.5522847 11,17 L11,11 Z"
                             fill="currentColor"
                         ></path>
                     </svg>
@@ -318,31 +287,27 @@ export default function Page() {
                         </button>
                     </div>
                 </div>
-                {/* 선택 작업 버튼 영역 */}
-                <div
-                    className={`transform transition-all duration-300 ease-out ${
-                        selectedItems.length > 0
-                            ? "opacity-100 translate-y-0 mb-8"
-                            : "opacity-0 -translate-y-4 mb-0 invisible h-0"
-                    }`}
-                >
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={handleDelete}
-                            className="bg-[#FFE2E5] hover:bg-[#F64E60] text-[#f64e60] hover:text-white flex justify-center items-center gap-2 px-3.5 py-2 text-sm rounded-[0.5rem] transition-all"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            삭제 ({selectedItems.length})
-                        </button>
-                        <button
-                            onClick={handleTransfer}
-                            className="bg-[#e1f0ff] hover:bg-[#3699ff] text-[#3699ff] hover:text-white flex justify-center items-center gap-2 px-3.5 py-2 text-sm rounded-[0.5rem] transition-all"
-                        >
-                            <ArrowLeftRight className="w-4 h-4" />
-                            전송 ({selectedItems.length})
-                        </button>
+                {/* 선택 작업 버튼 영역 (Collapse 사용) */}
+                <Collapse in={selectedItems.length > 0} timeout="auto" unmountOnExit>
+                    <div className="mb-8">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleDelete}
+                                className="bg-[#FFE2E5] hover:bg-[#F64E60] text-[#f64e60] hover:text-white flex justify-center items-center gap-2 px-3.5 py-2 text-sm rounded-[0.5rem] transition-all"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                삭제 ({selectedItems.length})
+                            </button>
+                            <button
+                                onClick={handleTransfer}
+                                className="bg-[#e1f0ff] hover:bg-[#3699ff] text-[#3699ff] hover:text-white flex justify-center items-center gap-2 px-3.5 py-2 text-sm rounded-[0.5rem] transition-all"
+                            >
+                                <ArrowLeftRight className="w-4 h-4" />
+                                전송 ({selectedItems.length})
+                            </button>
+                        </div>
                     </div>
-                </div>
+                </Collapse>
                 <div className="w-full">
                     <table className="w-full text-sm">
                         <thead>
@@ -370,7 +335,7 @@ export default function Page() {
                                     />
                                 </th>
                                 <th className="pb-3 text-left text-slate-400 font-normal">
-                                    보유 금융 자산
+                                    보유 자산
                                 </th>
                                 <th className="pb-3 text-left text-slate-400 font-normal">
                                     보유량
@@ -507,9 +472,6 @@ export default function Page() {
                                         {/* 총 수익 */}
                                         <td className="py-3">
                                             <div>
-                                                {/* displayCurrency === 'original' 인 경우 단순히 item.totalProfit을 그대로 출력 */}
-                                                {/* 'converted' 인 경우 convertAmount */}
-                                                {/* 이미 getDisplayAmount로 묶어도 됨 */}
                                                 <p
                                                     className={
                                                         item.totalProfit >= 0
@@ -673,37 +635,30 @@ export default function Page() {
                                 <td className="py-3 font-semibold text-slate-700">
                                     Total
                                 </td>
-                                {/* 수량 합계 (통화 상관없이 단순 합) */}
                                 <td className="py-3 font-semibold text-slate-700">
                                     {tableData.reduce(
                                         (acc, item) => acc + item.quantity,
                                         0
                                     )}
                                 </td>
-                                {/* 빈 칸 */}
                                 <td className="py-3 font-semibold text-slate-700"></td>
-                                {/* 총 구매가 */}
                                 <td className="py-3 font-semibold text-slate-700">
                                     {displayCurrency === "original" ? (
                                         hasMultipleCurrencies ? (
-                                            // 여러 통화가 섞여 있으면 표시 불가
                                             <span>---</span>
                                         ) : (
-                                            // 단일 통화면 합산값을 그대로 출력
                                             formatCurrency(
                                                 originalTotals.totalPurchase,
                                                 uniqueCurrencies[0]
                                             )
                                         )
                                     ) : (
-                                        // converted인 경우 계산해 놓은 totals에서 값 사용
                                         formatCurrency(
                                             totals.totalPurchase,
                                             selectedCurrency
                                         )
                                     )}
                                 </td>
-                                {/* 현재가 합 */}
                                 <td className="py-3 font-semibold text-slate-700">
                                     {displayCurrency === "original" ? (
                                         hasMultipleCurrencies ? (
@@ -721,7 +676,6 @@ export default function Page() {
                                         )
                                     )}
                                 </td>
-                                {/* 배당금 합 */}
                                 <td className="py-3 font-semibold text-slate-700">
                                     {displayCurrency === "original" ? (
                                         hasMultipleCurrencies ? (
@@ -739,11 +693,9 @@ export default function Page() {
                                         )
                                     )}
                                 </td>
-                                {/* 배당 수익률 (converted 기준) */}
                                 <td className="py-3 font-semibold text-slate-700">
                                     {totals.dividendYield.toFixed(2)}%
                                 </td>
-                                {/* 총 수익 */}
                                 <td className="py-3">
                                     <div>
                                         {displayCurrency === "original" ? (
@@ -787,8 +739,6 @@ export default function Page() {
                                                 )}
                                             </p>
                                         )}
-
-                                        {/* 퍼센트 */}
                                         <p
                                             className={`text-xs ${
                                                 totals.totalProfit >= 0
@@ -807,7 +757,6 @@ export default function Page() {
                                         </p>
                                     </div>
                                 </td>
-                                {/* 일간 수익 */}
                                 <td className="py-3">
                                     <div>
                                         {displayCurrency === "original" ? (
@@ -869,7 +818,6 @@ export default function Page() {
                                         </p>
                                     </div>
                                 </td>
-                                {/* 마지막 셀(더보기 버튼 영역) 공백 */}
                                 <td className="py-3"></td>
                             </tr>
                         </tfoot>
