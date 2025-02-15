@@ -7,6 +7,8 @@ interface ModalState {
     setIsTransferModalOpen: (status: boolean) => void;
     isTransactionsDeleteModalOpen: boolean;
     setIsTransactionsDeleteModalOpen: (status: boolean) => void;
+    isAssetsDeleteModalOpen: boolean;
+    setIsAssetsDeleteModalOpen: (status: boolean) => void;
 }
 
 export const useModalStore = create<ModalState>((set) => ({
@@ -16,4 +18,6 @@ export const useModalStore = create<ModalState>((set) => ({
     setIsTransferModalOpen: (status) => set({ isTransferModalOpen: status }),
     isTransactionsDeleteModalOpen: false,
     setIsTransactionsDeleteModalOpen: (status) => set({ isTransactionsDeleteModalOpen: status }),
+    isAssetsDeleteModalOpen: false,
+    setIsAssetsDeleteModalOpen: (status) => set({ isAssetsDeleteModalOpen: status }),
 }));

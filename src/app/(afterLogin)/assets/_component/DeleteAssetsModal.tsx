@@ -1,7 +1,7 @@
 import { useModalStore } from "@/app/store/modal";
 
-export default function DeleteTransactionsModal() {
-    const { setIsTransactionsDeleteModalOpen } = useModalStore();
+export default function DeleteAssetsModal() {
+    const { setIsAssetsDeleteModalOpen } = useModalStore();
 
     return (
         <>
@@ -11,12 +11,12 @@ export default function DeleteTransactionsModal() {
                     <div className="pb-4 mb-4 border-b">
                         <div className="flex flex-row justify-between items-center">
                             <h2 className="text-xl font-semibold">
-                                거래 내역 삭제
+                                보유 자산 삭제
                             </h2>
                             <button
                                 className="text-3xl text-slate-300 hover:text-[#3699ff] transition-all"
                                 onClick={() =>
-                                    setIsTransactionsDeleteModalOpen(false)
+                                    setIsAssetsDeleteModalOpen(false)
                                 }
                             >
                                 ×
@@ -24,13 +24,13 @@ export default function DeleteTransactionsModal() {
                         </div>
                     </div>
                     <div className="pb-4 mb-4 text-sm text-slate-700">
-                        정말 해당 거래 내역을 삭제하시겠습니까?
+                        정말 해당 보유 자산을 삭제하시겠습니까?
                     </div>
                     <div className="flex flex-row justify-end gap-2">
                         <button
                             className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-500 rounded-md transition-all"
                             onClick={() =>
-                                setIsTransactionsDeleteModalOpen(false)
+                                setIsAssetsDeleteModalOpen(false)
                             }
                         >
                             취소
