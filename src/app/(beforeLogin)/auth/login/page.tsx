@@ -39,6 +39,11 @@ export default function Page() {
                     response.data.access_token
                 );
                 localStorage.setItem("token_type", response.data.token_type);
+                // 사용자 정보를 로컬 스토리지에 저장
+                localStorage.setItem(
+                    "user_info",
+                    JSON.stringify(response.data.user)
+                );
 
                 await Swal.fire({
                     title: "로그인에 성공하였습니다!",
