@@ -100,6 +100,16 @@ export default function Navbar() {
         }
     };
 
+    const onClickAddPortfolio = () => {
+        setPortfolioOpen(false);
+        router.push('/new-portfolio');
+    }
+
+    const onClickManagePortfolios = () => {
+        setPortfolioOpen(false);
+        router.push('/manage-portfolios');
+    }
+
     return (
         <nav className="fixed top-0 left-0 right-0 h-[4.25rem] bg-white flex justify-between items-center shadow-xl text-sm z-50 px-4 md:px-8 lg:px-16 xl:px-48">
             <div className="flex gap-[1rem] md:gap-[2rem] items-center whitespace-nowrap">
@@ -475,7 +485,7 @@ export default function Navbar() {
                             <div className="flex justify-center items-center gap-2 p-3">
                                 <button
                                     className="bg-[#e1f0ff] hover:bg-[#3699ff] text-[#3699ff] hover:text-white px-3.5 py-2 text-sm rounded-[0.5rem] transition-all"
-                                    onClick={() => alert("Add a portfolio")}
+                                    onClick={onClickAddPortfolio}
                                 >
                                     <FontAwesomeIcon
                                         icon={faPlus as IconProp}
@@ -485,7 +495,7 @@ export default function Navbar() {
                                 </button>
                                 <button
                                     className="bg-[#e1f0ff] hover:bg-[#3699ff] text-[#3699ff] hover:text-white px-3.5 py-2 text-sm rounded-[0.5rem] transition-all"
-                                    onClick={() => alert("My portfolios")}
+                                    onClick={onClickManagePortfolios}
                                 >
                                     <FontAwesomeIcon
                                         icon={faCog as IconProp}
