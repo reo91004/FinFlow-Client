@@ -1,3 +1,7 @@
 export default function Page() {
-    return "분석 페이지";
+    return (
+        <div className="w-full flex bg-white px-10 mb-4 shadow-xl">
+            test
+        </div>
+    )
 }

@@ -111,13 +111,11 @@ export default function Navbar() {
     router.push('/watchlists');
   };
 
-  // 로그아웃 처리 함수
   const handleLogout = async () => {
     try {
       const accessToken = localStorage.getItem('access_token');
       await axiosInstance.post(`/users/logout?token=${accessToken}`);
       localStorage.removeItem('access_token');
-      localStorage.removeItem('uid');
       router.push('/auth/login');
     } catch (error: any) {
       await Swal.fire({
@@ -129,13 +127,18 @@ export default function Navbar() {
     }
   };
 
-  // 선택된 포트폴리오가 없을 경우 기본 텍스트
-  const selectedPortfolioName =
-    selectedPortfolio?.portfolio_name || '포트폴리오';
+  const onClickAddPortfolio = () => {
+    setPortfolioOpen(false);
+    router.push('/new-portfolio');
+  };
+
+  const onClickManagePortfolios = () => {
+    setPortfolioOpen(false);
+    router.push('/manage-portfolios');
+  };
 
   return (
     <nav className='fixed top-0 left-0 right-0 h-[4.25rem] bg-white flex justify-between items-center shadow-xl text-sm z-50 px-4 md:px-8 lg:px-16 xl:px-48'>
-      {/* 좌측: 로고 및 메뉴 */}
       <div className='flex gap-[1rem] md:gap-[2rem] items-center whitespace-nowrap'>
         <Link href='/'>
           <Image src={Logo} alt='logo' width={64} />
@@ -150,7 +153,6 @@ export default function Navbar() {
           <Link href='/stats' className={getLinkClassName('/stats')}>
             분석
           </Link>
-          {/* 상단 포트폴리오 메뉴 (드롭다운) */}
           <div className='relative'>
             <button
               onClick={togglePortfolioMenu}
@@ -345,10 +347,7 @@ export default function Navbar() {
           </Link>
         </div>
       </div>
-
-      {/* 우측: 아이콘 및 드롭다운 */}
       <div className='flex gap-[0.4rem] md:gap-[0.8rem] items-center whitespace-nowrap'>
-        {/* 검색 버튼 */}
         <button className='p-1 rounded-md text-[#3699ff] hover:bg-slate-100'>
           <svg
             width='24px'
@@ -382,8 +381,6 @@ export default function Navbar() {
             </g>
           </svg>
         </button>
-
-        {/* 관심목록 버튼 */}
         <button
           className='p-1 rounded-md text-[#3699ff] hover:bg-slate-100'
           onClick={onClickWatchLists}
@@ -406,14 +403,38 @@ export default function Navbar() {
             ></path>
           </svg>
         </button>
-
-        {/* 우측 포트폴리오 드롭다운 */}
         <div className='relative'>
           <button
             onClick={togglePortfolioDropdown}
             className='flex items-center px-3 py-[0.4rem] rounded-[0.4rem] text-slate-400 hover:bg-slate-100 hover:text-[#3699ff] transition-all'
           >
-            <span className='hidden lg:inline'>{selectedPortfolioName}</span>
+            <svg
+              xmlns='http://www.w3.org/2000/svg'
+              width='18'
+              height='18'
+              viewBox='0 0 24 24'
+              fill='none'
+              className='mr-2'
+            >
+              <g
+                id='Stockholm-icons-/-General-/-Portfolio'
+                stroke='none'
+                strokeWidth='1'
+                fill='none'
+                fillRule='evenodd'
+              >
+                <path
+                  opacity='0.3'
+                  d='M20 15H4C2.9 15 2 14.1 2 13V7C2 6.4 2.4 6 3 6H21C21.6 6 22 6.4 22 7V13C22 14.1 21.1 15 20 15ZM13 12H11C10.5 12 10 12.4 10 13V16C10 16.5 10.4 17 11 17H13C13.6 17 14 16.6 14 16V13C14 12.4 13.6 12 13 12Z'
+                  fill='currentColor'
+                ></path>
+                <path
+                  d='M14 6V5H10V6H8V5C8 3.9 8.9 3 10 3H14C15.1 3 16 3.9 16 5V6H14ZM20 15H14V16C14 16.6 13.5 17 13 17H11C10.5 17 10 16.6 10 16V15H4C3.6 15 3.3 14.9 3 14.7V18C3 19.1 3.9 20 5 20H19C20.1 20 21 19.1 21 18V14.7C20.7 14.9 20.4 15 20 15Z'
+                  fill='currentColor'
+                ></path>
+              </g>
+            </svg>
+            <span className='hidden lg:inline'>{selectedPortfolio}</span>
             <svg
               className={`-mr-1 size-5 text-gray-400 transition-transform ${
                 portfolioOpen ? 'rotate-180' : ''
@@ -435,31 +456,55 @@ export default function Navbar() {
               style={{ maxHeight: '300px' }}
             >
               <div className='py-2 max-h-40 overflow-y-auto border-b border-gray-200'>
-                {portfolios.map((portfolio: any) => (
+                {portfolios.map((portfolio) => (
                   <button
-                    key={portfolio.portfolio_id}
+                    key={portfolio}
                     onClick={() => handleSelectPortfolio(portfolio)}
                     className={`block w-full px-4 py-2 flex items-center text-sm text-slate-600 text-left hover:bg-slate-100 hover:text-[#3699ff] transition-all ${
-                      portfolio.portfolio_id === selectedPortfolio?.portfolio_id
-                        ? '!text-[#3699ff]'
-                        : ''
+                      portfolio === selectedPortfolio ? '!text-[#3699ff]' : ''
                     }`}
                   >
-                    {portfolio.portfolio_name}
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      width='18'
+                      height='18'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      className='mr-2 text-slate-400'
+                    >
+                      <g
+                        id='Stockholm-icons-/-General-/-Portfolio'
+                        stroke='none'
+                        strokeWidth='1'
+                        fill='none'
+                        fillRule='evenodd'
+                      >
+                        <path
+                          opacity='0.3'
+                          d='M20 15H4C2.9 15 2 14.1 2 13V7C2 6.4 2.4 6 3 6H21C21.6 6 22 6.4 22 7V13C22 14.1 21.1 15 20 15ZM13 12H11C10.5 12 10 12.4 10 13V16C10 16.5 10.4 17 11 17H13C13.6 17 14 16.6 14 16V13C14 12.4 13.6 12 13 12Z'
+                          fill='currentColor'
+                        ></path>
+                        <path
+                          d='M14 6V5H10V6H8V5C8 3.9 8.9 3 10 3H14C15.1 3 16 3.9 16 5V6H14ZM20 15H14V16C14 16.6 13.5 17 13 17H11C10.5 17 10 16.6 10 16V15H4C3.6 15 3.3 14.9 3 14.7V18C3 19.1 3.9 20 5 20H19C20.1 20 21 19.1 21 18V14.7C20.7 14.9 20.4 15 20 15Z'
+                          fill='currentColor'
+                        ></path>
+                      </g>
+                    </svg>
+                    {portfolio}
                   </button>
                 ))}
               </div>
               <div className='flex justify-center items-center gap-2 p-3'>
                 <button
                   className='bg-[#e1f0ff] hover:bg-[#3699ff] text-[#3699ff] hover:text-white px-3.5 py-2 text-sm rounded-[0.5rem] transition-all'
-                  onClick={() => alert('포트폴리오 추가 기능')}
+                  onClick={onClickAddPortfolio}
                 >
                   <FontAwesomeIcon icon={faPlus as IconProp} className='pr-2' />
                   추가
                 </button>
                 <button
                   className='bg-[#e1f0ff] hover:bg-[#3699ff] text-[#3699ff] hover:text-white px-3.5 py-2 text-sm rounded-[0.5rem] transition-all'
-                  onClick={() => alert('포트폴리오 관리 페이지 이동')}
+                  onClick={onClickManagePortfolios}
                 >
                   <FontAwesomeIcon icon={faCog as IconProp} className='pr-2' />
                   관리
@@ -468,8 +513,6 @@ export default function Navbar() {
             </div>
           )}
         </div>
-
-        {/* 통화(USD, KRW 등) 선택 드롭다운 */}
         <div className='relative'>
           <button
             onClick={toggleCurrencyDropdown}
@@ -509,7 +552,6 @@ export default function Navbar() {
                   >
                     <img
                       src={`/images/currencies/${currency}.png`}
-                      alt={`${currency} 아이콘`}
                       width='22'
                       height='22'
                       className='rounded-[0.2rem]'
@@ -521,8 +563,6 @@ export default function Navbar() {
             </div>
           )}
         </div>
-
-        {/* 프로필 드롭다운 */}
         <div className='relative'>
           <button
             onClick={toggleProfileDropdown}
