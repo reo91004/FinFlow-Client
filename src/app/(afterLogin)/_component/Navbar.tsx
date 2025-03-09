@@ -571,7 +571,29 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
                       </div>
                     )}
                   </div>
-                  {/* 버튼 영역 */}
+                  {/* 버튼 영역 추가 */}
+                  <div className='py-2 border-t border-gray-200'>
+                    <button
+                      onClick={onClickAddPortfolio}
+                      className='block w-full px-4 py-2 flex items-center gap-2 text-sm text-slate-600 text-left hover:bg-slate-100 hover:text-[#3699ff] transition-all'
+                    >
+                      <FontAwesomeIcon
+                        icon={faPlus as IconProp}
+                        className='w-4 h-4'
+                      />
+                      포트폴리오 추가
+                    </button>
+                    <button
+                      onClick={onClickManagePortfolios}
+                      className='block w-full px-4 py-2 flex items-center gap-2 text-sm text-slate-600 text-left hover:bg-slate-100 hover:text-[#3699ff] transition-all'
+                    >
+                      <FontAwesomeIcon
+                        icon={faCog as IconProp}
+                        className='w-4 h-4'
+                      />
+                      포트폴리오 관리
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
