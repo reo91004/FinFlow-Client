@@ -18,15 +18,19 @@ export default function DeletePortfolioModal({
 }: DeletePortfolioModalProps) {
   const { setIsDeletePortfolioModalOpen } = useModalStore();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleDelete = async () => {
     if (!portfolioId) {
+      setError('포트폴리오 ID가 없습니다.');
       return;
     }
 
     setLoading(true);
+    setError('');
 
     try {
+      // 백엔드 API 호출
       await axiosInstance.delete(`/portfolio/${portfolioId}`);
 
       setIsDeletePortfolioModalOpen(false);
@@ -40,9 +44,19 @@ export default function DeletePortfolioModal({
 
       // 삭제 성공 후 콜백 함수 실행 (목록 새로고침 등)
       if (onSuccess) onSuccess();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('포트폴리오 삭제 에러:', error);
+
+      if (error.response?.status === 404) {
+        setError('존재하지 않는 포트폴리오입니다.');
+      } else {
+        setError('포트폴리오 삭제 중 오류가 발생했습니다.');
+      }
+
+      // 에러 메시지 표시
       Swal.fire({
         title: '포트폴리오 삭제 중 오류가 발생했습니다.',
+        text: error.response?.data?.detail || '서버 오류가 발생했습니다.',
         icon: 'error',
         confirmButtonText: '확인',
         confirmButtonColor: '#3699ff',
@@ -70,7 +84,8 @@ export default function DeletePortfolioModal({
             </div>
           </div>
           <div className='pb-4 mb-4 text-sm text-slate-700'>
-            정말 해당 포트폴리오를 삭제하시겠습니까?
+            정말 이 포트폴리오를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            {error && <p className='text-red-500 text-xs mt-2'>{error}</p>}
           </div>
           <div className='flex flex-row justify-end gap-2'>
             <button
@@ -83,7 +98,7 @@ export default function DeletePortfolioModal({
             <button
               className='px-6 py-3 bg-red-400 hover:bg-red-500 text-sm font-semibold text-white rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed'
               onClick={handleDelete}
-              disabled={loading}
+              disabled={loading || !portfolioId}
             >
               {loading ? '삭제 중...' : '삭제'}
             </button>

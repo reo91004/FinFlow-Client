@@ -23,10 +23,6 @@ interface Portfolio {
   user_id?: number;
 }
 
-interface NavbarProps {
-  isLoggedIn?: boolean;
-}
-
 export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
   // Next.js 라우팅 관련
   const pathname = usePathname();
@@ -112,12 +108,37 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
         return;
       }
 
-      // 백엔드 라우터: GET /portfolio?user_id=uid
+      // 백엔드 API 호출
       const response = await axiosInstance.get(`/portfolio?user_id=${uid}`);
-      const data = response.data as Portfolio[]; // 타입 단언
+      const data = response.data;
+
       setPortfolios(data);
+
+      // 선택된 포트폴리오 가져오기 (로컬스토리지 또는 첫 번째 포트폴리오)
+      const savedPortfolioStr = localStorage.getItem('selected_portfolio');
+      if (savedPortfolioStr) {
+        try {
+          const savedPortfolio = JSON.parse(savedPortfolioStr);
+          // 저장된 포트폴리오가 현재 포트폴리오 목록에 있는지 확인
+          const exists = data.some(
+            (p: Portfolio) => p.portfolio_id === savedPortfolio.portfolio_id
+          );
+          if (exists) {
+            setSelectedPortfolio(savedPortfolio);
+            return;
+          }
+        } catch (e) {
+          console.error('selected_portfolio 파싱 실패:', e);
+        }
+      }
+
+      // 저장된 포트폴리오가 없거나 유효하지 않은 경우, 첫 번째 포트폴리오 선택
       if (data && data.length > 0) {
         setSelectedPortfolio(data[0]);
+        localStorage.setItem('selected_portfolio', JSON.stringify(data[0]));
+      } else {
+        setSelectedPortfolio(null);
+        localStorage.removeItem('selected_portfolio');
       }
     } catch (error) {
       console.error('포트폴리오 불러오기 에러:', error);
@@ -545,7 +566,7 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
               {portfolioOpen && (
                 <div
                   className='absolute right-0 mt-1 w-64 rounded-[0.5rem] bg-white shadow-xl'
-                  style={{ maxHeight: '300px' }}
+                  style={{ maxHeight: '400px' }}
                 >
                   <div className='py-2 max-h-40 overflow-y-auto border-b border-gray-200'>
                     {portfolios && portfolios.length > 0 ? (
@@ -561,7 +582,33 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
                               : ''
                           }`}
                         >
-                          {/* 버튼 내용 */}
+                          <span className='mr-2'>
+                            <svg
+                              xmlns='http://www.w3.org/2000/svg'
+                              width='16'
+                              height='16'
+                              viewBox='0 0 24 24'
+                              fill='none'
+                              className='text-slate-400'
+                            >
+                              <g
+                                stroke='none'
+                                strokeWidth='1'
+                                fill='none'
+                                fillRule='evenodd'
+                              >
+                                <path
+                                  opacity='0.3'
+                                  d='M20 15H4C2.9 15 2 14.1 2 13V7C2 6.4 2.4 6 3 6H21C21.6 6 22 6.4 22 7V13C22 14.1 21.1 15 20 15ZM13 12H11C10.5 12 10 12.4 10 13V16 C10 16.5 10.4 17 11 17H13C13.6 17 14 16.6 14 16V13C14 12.4 13.6 12 13 12Z'
+                                  fill='currentColor'
+                                ></path>
+                                <path
+                                  d='M14 6V5H10V6H8V5C8 3.9 8.9 3 10 3H14C15.1 3 16 3.9 16 5V6H14ZM20 15H14V16C14 16.6 13.5 17 13 17H11C10.5 17 10 16.6 10 16V15H4C3.6 15 3.3 14.9 3 14.7V18C3 19.1 3.9 20 5 20H19C20.1 20 21 19.1 21 18V14.7C20.7 14.9 20.4 15 20 15Z'
+                                  fill='currentColor'
+                                ></path>
+                              </g>
+                            </svg>
+                          </span>
                           {portfolio.portfolio_name}
                         </button>
                       ))
@@ -571,8 +618,8 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
                       </div>
                     )}
                   </div>
-                  {/* 버튼 영역 추가 */}
-                  <div className='py-2 border-t border-gray-200'>
+                  {/* 포트폴리오 추가/관리 버튼 영역 */}
+                  <div className='py-2'>
                     <button
                       onClick={onClickAddPortfolio}
                       className='block w-full px-4 py-2 flex items-center gap-2 text-sm text-slate-600 text-left hover:bg-slate-100 hover:text-[#3699ff] transition-all'

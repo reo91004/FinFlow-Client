@@ -25,6 +25,7 @@ export default function Page() {
     null
   );
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     isEditPortfolioModalOpen,
@@ -37,24 +38,26 @@ export default function Page() {
   useEffect(() => {
     const fetchPortfolios = async () => {
       try {
+        setLoading(true);
+        setError(null);
+
+        // 로컬스토리지에서 사용자 ID 가져오기
         const uid =
           localStorage.getItem('uid') ||
           JSON.parse(localStorage.getItem('user_info') || '{}').uid;
+
         if (!uid) {
-          console.error('사용자 uid가 로컬스토리지에 없습니다.');
+          setError('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
           setLoading(false);
           return;
         }
 
+        // 백엔드 API 호출
         const response = await axiosInstance.get(`/portfolio?user_id=${uid}`);
         setPortfolios(response.data);
       } catch (error) {
         console.error('포트폴리오 불러오기 에러:', error);
-        Swal.fire({
-          icon: 'error',
-          title: '포트폴리오를 불러오는 중 오류가 발생했습니다.',
-          confirmButtonText: '확인',
-        });
+        setError('포트폴리오를 불러오는 중 오류가 발생했습니다.');
       } finally {
         setLoading(false);
       }
@@ -76,15 +79,24 @@ export default function Page() {
   const handleSuccessfulUpdate = async () => {
     // 포트폴리오 목록 새로고침
     try {
+      setLoading(true);
       const uid =
         localStorage.getItem('uid') ||
         JSON.parse(localStorage.getItem('user_info') || '{}').uid;
-      if (!uid) return;
+
+      if (!uid) {
+        setError('사용자 정보를 찾을 수 없습니다.');
+        setLoading(false);
+        return;
+      }
 
       const response = await axiosInstance.get(`/portfolio?user_id=${uid}`);
       setPortfolios(response.data);
     } catch (error) {
       console.error('포트폴리오 목록 새로고침 오류:', error);
+      setError('포트폴리오 목록을 새로고침하는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -113,7 +125,7 @@ export default function Page() {
           >
             <FontAwesomeIcon
               icon={faPlus as IconProp}
-              className='w-6 h-6 pr-2'
+              className='w-4 h-4 mr-2'
             />
             포트폴리오 추가
           </button>
@@ -123,6 +135,8 @@ export default function Page() {
           <div className='py-10 text-center text-slate-500'>
             포트폴리오를 불러오는 중...
           </div>
+        ) : error ? (
+          <div className='py-10 text-center text-red-500'>{error}</div>
         ) : portfolios.length === 0 ? (
           <div className='py-10 text-center text-slate-500'>
             등록된 포트폴리오가 없습니다. 새로운 포트폴리오를 추가해보세요.

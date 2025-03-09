@@ -66,6 +66,8 @@ export default function EditPortfolioModal({
       // 성공 콜백 실행
       if (onSuccess) onSuccess();
     } catch (error: any) {
+      console.error('포트폴리오 수정 에러:', error);
+
       if (error.response?.status === 400) {
         setError('이미 존재하는 포트폴리오 이름입니다.');
       } else {
@@ -87,6 +89,7 @@ export default function EditPortfolioModal({
               <button
                 className='text-3xl text-slate-300 hover:text-[#3699ff] transition-all'
                 onClick={() => setIsEditPortfolioModalOpen(false)}
+                disabled={loading}
               >
                 ×
               </button>
@@ -102,12 +105,16 @@ export default function EditPortfolioModal({
               placeholder='포트폴리오 이름을 입력해주세요.'
               value={portfolioName}
               onChange={(e) => setPortfolioName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !loading) handleSave();
+              }}
+              disabled={loading}
             />
             {error && <p className='text-red-500 text-xs mt-1'>{error}</p>}
           </div>
           <div className='flex flex-row justify-end gap-2'>
             <button
-              className='px-6 py-3 bg-[#e1f0ff] hover:bg-[#3699ff] text-sm font-semibold text-[#3699ff] hover:text-white rounded-md transition-all'
+              className='px-6 py-3 bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-500 rounded-md transition-all'
               onClick={() => setIsEditPortfolioModalOpen(false)}
               disabled={loading}
             >
