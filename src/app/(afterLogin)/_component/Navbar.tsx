@@ -568,26 +568,26 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
                     )}
                   </div>
                   {/* 포트폴리오 추가/관리 버튼 영역 */}
-                  <div className='py-2'>
+                  <div className='flex justify-center items-center gap-2 p-3'>
                     <button
+                      className='bg-[#e1f0ff] hover:bg-[#3699ff] text-[#3699ff] hover:text-white px-3.5 py-2 text-sm rounded-[0.5rem] transition-all'
                       onClick={onClickAddPortfolio}
-                      className='block w-full px-4 py-2 flex items-center gap-2 text-sm text-slate-600 text-left hover:bg-slate-100 hover:text-[#3699ff] transition-all'
                     >
                       <FontAwesomeIcon
                         icon={faPlus as IconProp}
-                        className='w-4 h-4'
+                        className='pr-2'
                       />
-                      포트폴리오 추가
+                      추가
                     </button>
                     <button
+                      className='bg-[#e1f0ff] hover:bg-[#3699ff] text-[#3699ff] hover:text-white px-3.5 py-2 text-sm rounded-[0.5rem] transition-all'
                       onClick={onClickManagePortfolios}
-                      className='block w-full px-4 py-2 flex items-center gap-2 text-sm text-slate-600 text-left hover:bg-slate-100 hover:text-[#3699ff] transition-all'
                     >
                       <FontAwesomeIcon
                         icon={faCog as IconProp}
-                        className='w-4 h-4'
+                        className='pr-2'
                       />
-                      포트폴리오 관리
+                      관리
                     </button>
                   </div>
                 </div>
