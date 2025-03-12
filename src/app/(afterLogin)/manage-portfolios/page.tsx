@@ -288,7 +288,7 @@ export default function Page() {
           >
             <FontAwesomeIcon
               icon={faPlus as IconProp}
-              className='w-4 h-4 mr-2'
+              className='w-6 h-6 pr-2'
             />
             포트폴리오 추가
           </button>
