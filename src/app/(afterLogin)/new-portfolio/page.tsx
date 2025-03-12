@@ -2,87 +2,51 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axiosInstance from '@/utils/axiosInstance';
 import Swal from 'sweetalert2';
+import { usePortfolioStore } from '@/app/store/usePortfolioStore';
 
 export default function Page() {
   const [portfolioName, setPortfolioName] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // Zustand 스토어에서 필요한 상태와 액션 가져오기
+  const { addPortfolio, isLoading, error } = usePortfolioStore();
 
   const handleAddPortfolio = async () => {
     if (!portfolioName.trim()) {
-      setError('포트폴리오 이름을 입력해주세요.');
+      Swal.fire({
+        title: '오류',
+        text: '포트폴리오 이름을 입력해주세요.',
+        icon: 'error',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#3699ff',
+      });
       return;
     }
 
-    setLoading(true);
-    setError('');
+    // 스토어의 addPortfolio 액션 사용
+    const success = await addPortfolio(portfolioName);
 
-    try {
-      // 로컬스토리지에서 사용자 ID 가져오기
-      const uid =
-        localStorage.getItem('uid') ||
-        JSON.parse(localStorage.getItem('user_info') || '{}').uid;
+    if (success) {
+      await Swal.fire({
+        title: '포트폴리오가 생성되었습니다!',
+        text: `"${portfolioName}" 포트폴리오가 성공적으로 추가되었습니다.`,
+        icon: 'success',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#3699ff',
+      });
 
-      if (!uid) {
-        setError('로그인 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
-        setLoading(false);
-        return;
-      }
-
-      // 서버에서 필요로 하는 형식으로 데이터 구성
-      const portfolioData = {
-        portfolio_name: portfolioName,
-      };
-
-      // 백엔드 API 호출 - user_id를 쿼리 파라미터로 전달
-      const response = await axiosInstance.post(
-        `/portfolio?user_id=${uid}`,
-        portfolioData
-      );
-
-      if (response.data) {
-        await Swal.fire({
-          title: '포트폴리오가 생성되었습니다!',
-          text: `"${portfolioName}" 포트폴리오가 성공적으로 추가되었습니다.`,
-          icon: 'success',
-          confirmButtonText: '확인',
-          confirmButtonColor: '#3699ff',
-        });
-        // 포트폴리오 관리 페이지로 이동
-        router.push('/manage-portfolios');
-      }
-    } catch (error: any) {
-      console.error('API 에러:', error);
-
-      // 더 자세한 에러 정보 표시
-      if (error.response) {
-        // 서버 응답이 있는 경우
-        console.error('응답 데이터:', error.response.data);
-        console.error('응답 상태:', error.response.status);
-
-        if (error.response.status === 422) {
-          setError(
-            '데이터 형식이 올바르지 않습니다. 포트폴리오 이름을 확인해주세요.'
-          );
-        } else if (error.response.status === 400) {
-          setError('이미 존재하는 포트폴리오 이름입니다.');
-        } else {
-          setError(
-            `서버 오류: ${error.response.data.detail || '알 수 없는 오류'}`
-          );
-        }
-      } else if (error.request) {
-        // 요청은 보냈지만 응답을 받지 못한 경우
-        setError('서버에서 응답이 없습니다. 네트워크 연결을 확인해주세요.');
-      } else {
-        // 요청 설정 중 에러 발생
-        setError(`오류: ${error.message}`);
-      }
-    } finally {
-      setLoading(false);
+      // 포트폴리오 관리 페이지로 이동
+      router.push('/manage-portfolios');
+    } else {
+      // 에러 메시지 표시
+      await Swal.fire({
+        title: '오류',
+        text: error || '포트폴리오 생성 중 오류가 발생했습니다.',
+        icon: 'error',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#3699ff',
+      });
     }
   };
 
@@ -97,10 +61,11 @@ export default function Page() {
             value={portfolioName}
             onChange={(e) => setPortfolioName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddPortfolio();
+              if (e.key === 'Enter' && !isLoading) handleAddPortfolio();
             }}
             className='p-3 bg-slate-100 text-sm text-slate-700 rounded-md'
             placeholder='포트폴리오 이름을 입력해주세요.'
+            disabled={isLoading}
           />
           {error && <p className='text-red-500 text-xs mt-1'>{error}</p>}
         </div>
@@ -108,16 +73,16 @@ export default function Page() {
           <button
             className='px-6 py-3 bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-500 rounded-md transition-all'
             onClick={() => router.push('/manage-portfolios')}
-            disabled={loading}
+            disabled={isLoading}
           >
             취소
           </button>
           <button
             className='px-6 py-3 bg-[#3699ff] hover:bg-[#187de4] text-sm font-semibold text-white rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed'
             onClick={handleAddPortfolio}
-            disabled={loading}
+            disabled={isLoading}
           >
-            {loading ? '처리 중...' : '추가'}
+            {isLoading ? '처리 중...' : '추가'}
           </button>
         </div>
       </div>

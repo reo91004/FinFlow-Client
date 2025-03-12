@@ -1,119 +1,282 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useModalStore } from '@/app/store/modal';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { faPen, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Trash2 } from 'lucide-react';
-import EditPortfolioModal from './_component/EditPortfolioModal';
-import DeletePortfolioModal from './_component/DeletePortfolioModal';
 import { useRouter } from 'next/navigation';
-import axiosInstance from '@/utils/axiosInstance';
 import Swal from 'sweetalert2';
+import { usePortfolioStore, Portfolio } from '@/app/store/usePortfolioStore';
 
-interface Portfolio {
-  portfolio_id: number;
-  portfolio_name: string;
-  user_id: number;
-}
+// 편집 모달 컴포넌트
+function EditPortfolioModal({
+  portfolio,
+  onClose,
+  onSuccess,
+}: {
+  portfolio: Portfolio;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [portfolioName, setPortfolioName] = useState(portfolio.portfolio_name);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError] = useState('');
+  const { updatePortfolio } = usePortfolioStore();
 
-export default function Page() {
-  const router = useRouter();
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-  const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(
-    null
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const handleSave = async () => {
+    if (!portfolioName.trim()) {
+      setModalError('포트폴리오 이름을 입력해주세요.');
+      return;
+    }
 
-  const {
-    isEditPortfolioModalOpen,
-    setIsEditPortfolioModalOpen,
-    isDeletePortfolioModalOpen,
-    setIsDeletePortfolioModalOpen,
-  } = useModalStore();
+    setModalLoading(true);
+    setModalError('');
 
-  // 포트폴리오 목록 불러오기
-  useEffect(() => {
-    const fetchPortfolios = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // 로컬스토리지에서 사용자 ID 가져오기
-        const uid =
-          localStorage.getItem('uid') ||
-          JSON.parse(localStorage.getItem('user_info') || '{}').uid;
-
-        if (!uid) {
-          setError('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
-          setLoading(false);
-          return;
-        }
-
-        // 백엔드 API 호출
-        const response = await axiosInstance.get(`/portfolio?user_id=${uid}`);
-        setPortfolios(response.data);
-      } catch (error) {
-        console.error('포트폴리오 불러오기 에러:', error);
-        setError('포트폴리오를 불러오는 중 오류가 발생했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPortfolios();
-  }, []);
-
-  const handleEdit = (portfolio: Portfolio) => {
-    setSelectedPortfolio(portfolio);
-    setIsEditPortfolioModalOpen(true);
-  };
-
-  const handleDelete = (portfolio: Portfolio) => {
-    setSelectedPortfolio(portfolio);
-    setIsDeletePortfolioModalOpen(true);
-  };
-
-  const handleSuccessfulUpdate = async () => {
-    // 포트폴리오 목록 새로고침
     try {
-      setLoading(true);
-      const uid =
-        localStorage.getItem('uid') ||
-        JSON.parse(localStorage.getItem('user_info') || '{}').uid;
+      const success = await updatePortfolio(
+        portfolio.portfolio_id,
+        portfolioName
+      );
 
-      if (!uid) {
-        setError('사용자 정보를 찾을 수 없습니다.');
-        setLoading(false);
-        return;
+      if (success) {
+        await Swal.fire({
+          title: '포트폴리오가 수정되었습니다!',
+          icon: 'success',
+          confirmButtonText: '확인',
+          confirmButtonColor: '#3699ff',
+        });
+        onSuccess();
+        onClose();
+      } else {
+        setModalError('포트폴리오 이름 수정에 실패했습니다.');
       }
-
-      const response = await axiosInstance.get(`/portfolio?user_id=${uid}`);
-      setPortfolios(response.data);
     } catch (error) {
-      console.error('포트폴리오 목록 새로고침 오류:', error);
-      setError('포트폴리오 목록을 새로고침하는 중 오류가 발생했습니다.');
+      setModalError('포트폴리오를 수정하는 중 오류가 발생했습니다.');
     } finally {
-      setLoading(false);
+      setModalLoading(false);
     }
   };
 
   return (
+    <>
+      <div className='fixed inset-0 bg-black/25 z-[60]' onClick={onClose}></div>
+      <div className='fixed top-1/4 left-1/2 z-[70] w-full max-w-lg -translate-x-1/2 -translate-y-1/2'>
+        <div
+          className='bg-white rounded-lg shadow-xl p-6 animate-fade-in-down'
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className='pb-4 mb-4 border-b'>
+            <div className='flex flex-row justify-between items-center'>
+              <h2 className='text-xl font-semibold'>포트폴리오 수정</h2>
+              <button
+                className='text-3xl text-slate-300 hover:text-[#3699ff] transition-all'
+                onClick={onClose}
+                disabled={modalLoading}
+                type='button'
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <div className='flex flex-col pb-4 mb-4'>
+            <label className='text-sm text-slate-700 mb-2'>
+              포트폴리오 이름
+            </label>
+            <input
+              type='text'
+              className='p-3 bg-slate-100 text-sm text-slate-700 rounded-md'
+              placeholder='포트폴리오 이름을 입력해주세요.'
+              value={portfolioName}
+              onChange={(e) => setPortfolioName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !modalLoading) handleSave();
+              }}
+              disabled={modalLoading}
+            />
+            {modalError && (
+              <p className='text-red-500 text-xs mt-1'>{modalError}</p>
+            )}
+          </div>
+          <div className='flex flex-row justify-end gap-2'>
+            <button
+              className='px-6 py-3 bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-500 rounded-md transition-all'
+              onClick={onClose}
+              disabled={modalLoading}
+              type='button'
+            >
+              취소
+            </button>
+            <button
+              className='px-6 py-3 bg-[#3699ff] hover:bg-[#187de4] text-sm font-semibold text-white rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+              onClick={handleSave}
+              disabled={modalLoading}
+              type='button'
+            >
+              {modalLoading ? '저장 중...' : '저장'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// 삭제 확인 모달 컴포넌트
+function DeletePortfolioModal({
+  portfolio,
+  onClose,
+  onSuccess,
+}: {
+  portfolio: Portfolio;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [modalLoading, setModalLoading] = useState(false);
+  const { deletePortfolio } = usePortfolioStore();
+
+  const handleConfirmDelete = async () => {
+    setModalLoading(true);
+
+    try {
+      const success = await deletePortfolio(portfolio.portfolio_id);
+
+      if (success) {
+        await Swal.fire({
+          title: '포트폴리오가 삭제되었습니다!',
+          icon: 'success',
+          confirmButtonText: '확인',
+          confirmButtonColor: '#3699ff',
+        });
+        onSuccess();
+        onClose();
+      } else {
+        await Swal.fire({
+          title: '오류',
+          text: '포트폴리오를 삭제하는 중 오류가 발생했습니다.',
+          icon: 'error',
+          confirmButtonText: '확인',
+          confirmButtonColor: '#3699ff',
+        });
+      }
+    } catch (error) {
+      await Swal.fire({
+        title: '오류',
+        text: '포트폴리오를 삭제하는 중 오류가 발생했습니다.',
+        icon: 'error',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#3699ff',
+      });
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className='fixed inset-0 bg-black/25 z-[60]' onClick={onClose}></div>
+      <div className='fixed top-1/4 left-1/2 z-[70] w-full max-w-lg -translate-x-1/2 -translate-y-1/2'>
+        <div
+          className='bg-white rounded-lg shadow-xl p-6 animate-fade-in-down'
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className='pb-4 mb-4 border-b'>
+            <div className='flex flex-row justify-between items-center'>
+              <h2 className='text-xl font-semibold'>포트폴리오 삭제</h2>
+              <button
+                className='text-3xl text-slate-300 hover:text-[#3699ff] transition-all'
+                onClick={onClose}
+                disabled={modalLoading}
+                type='button'
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <div className='pb-4 mb-4 text-sm text-slate-700'>
+            <p>
+              정말 <strong>"{portfolio.portfolio_name}"</strong> 포트폴리오를
+              삭제하시겠습니까?
+            </p>
+            <p className='mt-2 text-red-500'>이 작업은 되돌릴 수 없습니다.</p>
+          </div>
+          <div className='flex flex-row justify-end gap-2'>
+            <button
+              className='px-6 py-3 bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-500 rounded-md transition-all'
+              onClick={onClose}
+              disabled={modalLoading}
+              type='button'
+            >
+              취소
+            </button>
+            <button
+              className='px-6 py-3 bg-red-400 hover:bg-red-500 text-sm font-semibold text-white rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+              onClick={handleConfirmDelete}
+              disabled={modalLoading}
+              type='button'
+            >
+              {modalLoading ? '삭제 중...' : '삭제'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+export default function Page() {
+  const router = useRouter();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(
+    null
+  );
+
+  // Zustand 스토어에서 필요한 상태와 액션 가져오기
+  const { portfolios, isLoading, error, fetchPortfolios } = usePortfolioStore();
+
+  // 페이지 로드 시 포트폴리오 목록 불러오기
+  useEffect(() => {
+    fetchPortfolios();
+  }, [fetchPortfolios]);
+
+  const handleEdit = (portfolio: Portfolio) => {
+    setSelectedPortfolio(portfolio);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = (portfolio: Portfolio) => {
+    setSelectedPortfolio(portfolio);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsEditModalOpen(false);
+    setIsDeleteModalOpen(false);
+  };
+
+  const handleSuccess = () => {
+    fetchPortfolios(); // 성공 후 목록 새로고침
+  };
+
+  return (
     <div>
-      {isEditPortfolioModalOpen && (
+      {isEditModalOpen && selectedPortfolio && (
         <EditPortfolioModal
           portfolio={selectedPortfolio}
-          onSuccess={handleSuccessfulUpdate}
+          onClose={handleModalClose}
+          onSuccess={handleSuccess}
         />
       )}
-      {isDeletePortfolioModalOpen && (
+
+      {isDeleteModalOpen && selectedPortfolio && (
         <DeletePortfolioModal
-          portfolioId={selectedPortfolio?.portfolio_id ?? null}
-          onSuccess={handleSuccessfulUpdate}
+          portfolio={selectedPortfolio}
+          onClose={handleModalClose}
+          onSuccess={handleSuccess}
         />
       )}
+
       <h5 className='text-[1.25rem] font-semibold text-slate-700 mb-4'>
         포트폴리오 관리
       </h5>
@@ -131,7 +294,7 @@ export default function Page() {
           </button>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className='py-10 text-center text-slate-500'>
             포트폴리오를 불러오는 중...
           </div>
@@ -198,6 +361,7 @@ export default function Page() {
                       <button
                         className='p-2 bg-[#e1f0ff] hover:bg-[#3699ff] text-[#3699ff] hover:text-white rounded-[0.5rem] transition-all'
                         onClick={() => handleEdit(portfolio)}
+                        type='button'
                       >
                         <FontAwesomeIcon
                           icon={faPen as IconProp}
@@ -207,6 +371,7 @@ export default function Page() {
                       <button
                         className='p-2 bg-[#FFE2E5] hover:bg-[#F64E60] text-[#f64e60] hover:text-white rounded-[0.5rem] transition-all'
                         onClick={() => handleDelete(portfolio)}
+                        type='button'
                       >
                         <Trash2 className='w-4 h-4 block' />
                       </button>

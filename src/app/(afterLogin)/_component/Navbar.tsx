@@ -12,15 +12,10 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import axiosInstance from '@/utils/axiosInstance';
 import Swal from 'sweetalert2';
 import Profile from '../../../../public/images/profile.jpg';
+import { usePortfolioStore } from '@/app/store/usePortfolioStore';
 
 interface NavbarProps {
   isLoggedIn?: boolean; // optional로 설정하여 기존 코드와의 호환성 유지
-}
-
-interface Portfolio {
-  portfolio_id: number;
-  portfolio_name: string;
-  user_id?: number;
 }
 
 export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
@@ -35,11 +30,16 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
   const [portfolioOpen, setPortfolioOpen] = useState(false);
   const [portfolioMenuOpen, setPortfolioMenuOpen] = useState(false);
 
-  // 상태 타입 명시
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-  const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(
-    null
-  );
+  // Zustand 스토어에서 포트폴리오 관련 상태와 액션 가져오기
+  const {
+    portfolios,
+    selectedPortfolio,
+    fetchPortfolios,
+    selectPortfolio,
+    reset: resetPortfolioStore,
+  } = usePortfolioStore();
+
+  // 로그인 상태 관련 로직
   const [isLoggedIn, setIsLoggedIn] = useState(propIsLoggedIn || false);
   const [userName, setUserName] = useState('');
 
@@ -73,82 +73,17 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
     if (isLoggedIn) {
       fetchPortfolios();
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, fetchPortfolios]);
 
-  // pathname 변경 시 portfolioMenu 닫기
+  // pathname 변경 시 portfolioMenu 닫고 포트폴리오 새로고침
   useEffect(() => {
     setPortfolioMenuOpen(false);
-  }, [pathname]);
 
-  // 백엔드 API를 통해 포트폴리오 목록을 가져오는 함수
-  const fetchPortfolios = async () => {
-    try {
-      // 로컬스토리지 접근 전에 브라우저 환경인지 확인
-      if (typeof window === 'undefined') return;
-
-      // user_info에서 uid 가져오기 시도
-      let uid;
-      const userInfoStr = localStorage.getItem('user_info');
-      if (userInfoStr) {
-        try {
-          const userInfo = JSON.parse(userInfoStr);
-          uid = userInfo.uid;
-        } catch (e) {
-          console.error('user_info 파싱 실패:', e);
-        }
-      }
-
-      // 직접 uid 가져오기 시도
-      if (!uid) {
-        uid = localStorage.getItem('uid');
-      }
-
-      // uid가 없으면 (로그인 안된 상태) 무시
-      if (!uid) {
-        return;
-      }
-
-      // 백엔드 API 호출
-      const response = await axiosInstance.get(`/portfolio?user_id=${uid}`);
-      const data = response.data;
-
-      setPortfolios(data);
-
-      // 선택된 포트폴리오 가져오기 (로컬스토리지 또는 첫 번째 포트폴리오)
-      const savedPortfolioStr = localStorage.getItem('selected_portfolio');
-      if (savedPortfolioStr) {
-        try {
-          const savedPortfolio = JSON.parse(savedPortfolioStr);
-          // 저장된 포트폴리오가 현재 포트폴리오 목록에 있는지 확인
-          const exists = data.some(
-            (p: Portfolio) => p.portfolio_id === savedPortfolio.portfolio_id
-          );
-          if (exists) {
-            setSelectedPortfolio(savedPortfolio);
-            return;
-          }
-        } catch (e) {
-          console.error('selected_portfolio 파싱 실패:', e);
-        }
-      }
-
-      // 저장된 포트폴리오가 없거나 유효하지 않은 경우, 첫 번째 포트폴리오 선택
-      if (data && data.length > 0) {
-        setSelectedPortfolio(data[0]);
-        localStorage.setItem('selected_portfolio', JSON.stringify(data[0]));
-      } else {
-        setSelectedPortfolio(null);
-        localStorage.removeItem('selected_portfolio');
-      }
-    } catch (error) {
-      console.error('포트폴리오 불러오기 에러:', error);
-      Swal.fire({
-        icon: 'error',
-        title: '포트폴리오를 불러오는 중 오류가 발생했습니다.',
-        confirmButtonText: '확인',
-      });
+    // 로그인 상태일 때 페이지 전환 시마다 포트폴리오 목록 새로고침
+    if (isLoggedIn) {
+      fetchPortfolios();
     }
-  };
+  }, [pathname, isLoggedIn, fetchPortfolios]);
 
   // 현재 pathname에 따른 링크 스타일 지정 함수
   const getLinkClassName = (paths: string | string[]) => {
@@ -176,6 +111,11 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
   };
 
   const togglePortfolioDropdown = () => {
+    // 드롭다운 열 때 포트폴리오 목록 새로고침
+    if (!portfolioOpen && isLoggedIn) {
+      fetchPortfolios();
+    }
+
     setPortfolioOpen(!portfolioOpen);
     setCurrencyOpen(false);
     setProfileOpen(false);
@@ -186,10 +126,11 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
   };
 
   // 포트폴리오 선택 시 처리
-  const handleSelectPortfolio = (portfolio: Portfolio) => {
-    setSelectedPortfolio(portfolio);
-    setPortfolioMenuOpen(false);
-    localStorage.setItem('selected_portfolio', JSON.stringify(portfolio));
+  const handleSelectPortfolio = (portfolio: typeof selectedPortfolio) => {
+    if (portfolio) {
+      selectPortfolio(portfolio);
+      setPortfolioOpen(false);
+    }
   };
 
   // 관심 목록 페이지로 이동
@@ -201,10 +142,15 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
     try {
       const accessToken = localStorage.getItem('access_token');
       await axiosInstance.post(`/users/logout?token=${accessToken}`);
+
+      // 로컬스토리지 정리
       localStorage.removeItem('access_token');
       localStorage.removeItem('user_info');
       localStorage.removeItem('uid');
       localStorage.removeItem('selected_portfolio');
+
+      // 포트폴리오 스토어 초기화
+      resetPortfolioStore();
 
       await Swal.fire({
         title: '로그아웃 되었습니다.',
@@ -220,6 +166,9 @@ export default function Navbar({ isLoggedIn: propIsLoggedIn }: NavbarProps) {
       localStorage.removeItem('user_info');
       localStorage.removeItem('uid');
       localStorage.removeItem('selected_portfolio');
+
+      // 포트폴리오 스토어 초기화
+      resetPortfolioStore();
 
       router.push('/auth/login');
     }
