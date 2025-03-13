@@ -21,21 +21,8 @@ import DeleteAssetsModal from './_component/DeleteAssetsModal';
 import AddInvestmentsModal from '../transactions/_component/AddInvestmentsModal';
 import axiosInstance from '@/utils/axiosInstance';
 import { usePortfolioStore } from '@/app/store/usePortfolioStore';
-
-// API에서 반환되는 데이터 타입 정의
-interface FinancialProduct {
-  financial_product_id: number;
-  product_name: string;
-  ticker: string;
-}
-
-interface Asset {
-  portfolio_id: number;
-  currency_code: string;
-  price: number;
-  quantity: number;
-  financial_product: FinancialProduct;
-}
+import { Asset } from '@/model/Asset';
+import { FinancialProduct } from '@/model/FinancialProduct';
 
 interface AssetsResponse {
   total: number;
