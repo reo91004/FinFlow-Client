@@ -20,6 +20,20 @@ axiosInstance.interceptors.request.use(
   (config) => {
     // 클라이언트에서만 localStorage 사용 가능
     if (typeof window !== 'undefined') {
+      // Finnhub API 또는 exchangerate-api 요청인 경우 Authorization 헤더를 추가하지 않음
+      if (
+        config.url &&
+        (config.url.includes('finnhub.io') ||
+          config.url.includes('exchangerate-api.com'))
+      ) {
+        // 외부 API는 Authorization 헤더를 사용하지 않으므로 제외
+        // Authorization 헤더가 이미 있다면 제거
+        if (config.headers && config.headers.Authorization) {
+          delete config.headers.Authorization;
+        }
+        return config;
+      }
+
       const token = localStorage.getItem('access_token');
       if (token) {
         // 백엔드가 Bearer 토큰 방식을 쓴다면

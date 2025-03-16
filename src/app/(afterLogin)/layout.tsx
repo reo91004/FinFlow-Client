@@ -42,15 +42,6 @@ export default function AfterLoginLayout({
     }
   }, [router, pathname]);
 
-  // 로그인 확인 중인 동안에만 로딩 표시
-  if (checking) {
-    return (
-      <div className='flex justify-center items-center min-h-screen'>
-        <p>로딩 중...</p>
-      </div>
-    );
-  }
-
   return (
     <div>
       <Navbar isLoggedIn={isAuthenticated} />
