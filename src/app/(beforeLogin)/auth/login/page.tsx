@@ -3,10 +3,22 @@
 import Image from 'next/image';
 import Logo from '../../../../../public/images/logo.png';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axiosInstance from '@/utils/axiosInstance';
 import { useRouter } from 'next/navigation';
 import Swal from 'sweetalert2';
+
+// 세션 타임아웃 시간
+const SESSION_TIMEOUT = 1800000;
+
+// localStorage에서 사용자 정보를 지우는 함수
+export const clearUserSession = () => {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('token_type');
+  localStorage.removeItem('user_info');
+  localStorage.removeItem('uid');
+  localStorage.removeItem('session_start_time');
+};
 
 export default function Page() {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +27,62 @@ export default function Page() {
   const [error, setError] = useState('');
 
   const router = useRouter();
+
+  // 컴포넌트가 마운트될 때 세션 타임아웃 체크
+  useEffect(() => {
+    // 이전 세션이 남아있는지 확인
+    const checkSession = () => {
+      const sessionStartTime = localStorage.getItem('session_start_time');
+
+      if (sessionStartTime) {
+        const currentTime = new Date().getTime();
+        const elapsedTime = currentTime - parseInt(sessionStartTime);
+
+        // 세션 타임아웃 시간이 지났으면 로그아웃 처리
+        if (elapsedTime > SESSION_TIMEOUT) {
+          clearUserSession();
+          // 선택적: 세션 만료 알림
+          Swal.fire({
+            title: '세션이 만료되었습니다.',
+            text: '보안을 위해 자동 로그아웃 되었습니다.',
+            icon: 'info',
+            confirmButtonText: '확인',
+            confirmButtonColor: '#3699ff',
+          });
+        }
+      }
+    };
+
+    checkSession();
+
+    // 활동 감지를 위한 이벤트 리스너
+    const resetSessionTimer = () => {
+      if (localStorage.getItem('access_token')) {
+        localStorage.setItem(
+          'session_start_time',
+          new Date().getTime().toString()
+        );
+      }
+    };
+
+    // 사용자 활동 이벤트 리스너 등록
+    window.addEventListener('click', resetSessionTimer);
+    window.addEventListener('keypress', resetSessionTimer);
+    window.addEventListener('scroll', resetSessionTimer);
+    window.addEventListener('mousemove', resetSessionTimer);
+
+    // 주기적으로 세션 체크 (1분마다)
+    const sessionInterval = setInterval(checkSession, 60000);
+
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      window.removeEventListener('click', resetSessionTimer);
+      window.removeEventListener('keypress', resetSessionTimer);
+      window.removeEventListener('scroll', resetSessionTimer);
+      window.removeEventListener('mousemove', resetSessionTimer);
+      clearInterval(sessionInterval);
+    };
+  }, []);
 
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
@@ -33,9 +101,13 @@ export default function Page() {
       });
 
       if (response.data) {
+        // 세션 시작 시간 기록
+        const sessionStartTime = new Date().getTime().toString();
+
         // 토큰을 로컬 스토리지에 저장
         localStorage.setItem('access_token', response.data.access_token);
         localStorage.setItem('token_type', response.data.token_type);
+        localStorage.setItem('session_start_time', sessionStartTime);
 
         // 사용자 정보를 로컬 스토리지에 저장
         localStorage.setItem('user_info', JSON.stringify(response.data.user));
