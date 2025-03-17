@@ -17,43 +17,27 @@ import axiosInstance from '@/utils/axiosInstance';
 import { useCurrencyStore } from '@/app/store/currency';
 import { formatCurrency } from '@/utils/formatCurrency';
 
-const exchangeRates: Record<string, number> = {
-  USD: 1,
-  KRW: 1344.5,
-  EUR: 0.92,
-  GBP: 0.79,
-  JPY: 151.62,
-  CAD: 1.35,
-  AUD: 1.52,
-  CNY: 7.24,
-  CHF: 0.89,
-  INR: 83.35,
-  SGD: 1.34,
-};
+const Page = () => {
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({
+    USD: 1,
+  });
 
-/**
- * 금액 환산 함수
- * @param amount 원금액
- * @param fromCurrency 원금액 통화
- * @param toCurrency 변환 대상 통화
- */
-function convertAmount(
-  amount: number,
-  fromCurrency: string,
-  toCurrency: string
-) {
-  if (!exchangeRates[fromCurrency] || !exchangeRates[toCurrency]) {
-    // 환율 데이터가 없으면 그대로 반환
-    return amount;
-  }
-  const baseAmount = amount / exchangeRates[fromCurrency];
-  return baseAmount * exchangeRates[toCurrency];
-}
+  useEffect(() => {
+    const fetchExchangeRates = async () => {
+      try {
+        const response = await axiosInstance.get(
+          'https://api.exchangerate-api.com/v4/latest/USD'
+        );
+        setExchangeRates(response.data.rates);
+      } catch (err) {
+        console.error('환율 정보를 가져오는 중 오류 발생:', err);
+      }
+    };
+    fetchExchangeRates();
+  }, []);
 
-export default function Page() {
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
-
   const [displayCurrency, setDisplayCurrency] = useState<
     'original' | 'converted'
   >('converted');
@@ -87,6 +71,25 @@ export default function Page() {
   useEffect(() => {
     fetchTransactions();
   }, []);
+
+  /**
+   * 금액 환산 함수
+   * @param amount 원금액
+   * @param fromCurrency 원금액 통화
+   * @param toCurrency 변환 대상 통화
+   */
+  function convertAmount(
+    amount: number,
+    fromCurrency: string,
+    toCurrency: string
+  ) {
+    if (!exchangeRates[fromCurrency] || !exchangeRates[toCurrency]) {
+      // 환율 데이터가 없으면 그대로 반환
+      return amount;
+    }
+    const baseAmount = amount / exchangeRates[fromCurrency];
+    return baseAmount * exchangeRates[toCurrency];
+  }
 
   const purchaseTotals = transactions.reduce((acc, item) => {
     if (item.transaction_type === '구매') {
@@ -164,11 +167,6 @@ export default function Page() {
     }
   };
 
-  /**
-   * 6) 상단 요약(구매/판매)도 마찬가지로 original / converted 표시
-   *    - original : 기존처럼 통화별로 모두 표시
-   *    - converted: 모든 통화를 합산해 selectedCurrency로 합쳐 표시
-   */
   // 구매 총액( converted 모드 시, 모든 통화를 하나로 합산 )
   const purchaseTotalConverted = Object.entries(purchaseTotals).reduce(
     (acc, [currency, total]) =>
@@ -182,9 +180,6 @@ export default function Page() {
     0
   );
 
-  /**
-   * 7) 하단 TotalProfitAll(총 수익)도 original / converted
-   */
   // 트랜잭션 목록에 포함된 '원본 통화' 중복 여부 판단
   const uniqueCurrencies = Array.from(
     new Set(transactions.map((tx) => tx.currency))
@@ -643,4 +638,6 @@ export default function Page() {
       </div>
     </>
   );
-}
+};
+
+export default Page;
