@@ -1,3 +1,5 @@
+'use client';
+
 import axios from 'axios';
 
 // 백엔드 API 서버 주소를 .env 혹은 환경변수에서 가져온다고 가정

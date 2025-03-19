@@ -1,4 +1,6 @@
 // src/app/store/usePortfolioStore.ts
+'use client';
+
 import { create } from 'zustand';
 import axiosInstance from '@/utils/axiosInstance';
 
