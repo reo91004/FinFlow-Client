@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import axiosInstance from '@/utils/axiosInstance';
 import { useRouter } from 'next/navigation';
 import Swal from 'sweetalert2';
+import InvestmentProfileModal from '@/app/(afterLogin)/_component/InvestmentProfileModal';
 
 // 세션 타임아웃 시간
 const SESSION_TIMEOUT = 1800000;
@@ -25,6 +26,7 @@ export default function Page() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const router = useRouter();
 
@@ -121,7 +123,15 @@ export default function Page() {
           confirmButtonText: '확인',
           confirmButtonColor: '#3699ff',
         });
-        router.push('/');
+
+        // 투자 성향이 설정되어 있는지 확인
+        if (!response.data.user.investment_profile) {
+          // 투자 성향 설정 모달 표시
+          setShowProfileModal(true);
+        } else {
+          // 투자 성향이 이미 설정되어 있으면 홈으로 이동
+          router.push('/');
+        }
       }
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -140,6 +150,12 @@ export default function Page() {
         });
       }
     }
+  };
+
+  // 모달 닫기 - 나중에 설정하기 클릭 시
+  const handleCloseModal = () => {
+    setShowProfileModal(false);
+    router.push('/');
   };
 
   return (
@@ -217,6 +233,11 @@ export default function Page() {
           </Link>
         </div>
       </form>
+
+      {/* 투자 성향 설정 모달 */}
+      {showProfileModal && (
+        <InvestmentProfileModal onClose={handleCloseModal} />
+      )}
     </div>
   );
 }
